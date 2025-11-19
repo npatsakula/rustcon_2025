@@ -1,4 +1,5 @@
 #import "@preview/polylux:0.4.0": *
+#import "@preview/diagraph:0.3.6": *
 
 #set page(paper: "presentation-16-9")
 #set text(font: "Liberation Sans", size: 20pt)
@@ -47,15 +48,27 @@
 
 // Title Slide
 #slide[
-  #align(center + horizon)[
-    #text(size: 48pt, weight: "bold", fill: rgb("#ff6b35"))[
-      Morok: A High-Performance ML Framework in Rust
+  #align(left + horizon)[
+    #text(size: 72pt, weight: "bold", fill: rgb("#ff6b35"))[
+      Morok
     ]
 
-    #v(2em)
+    #v(1em)
 
-    #text(size: 24pt)[
-      RustConf 2025
+    #text(size: 22pt, fill: rgb("#d0d0d0"))[
+      Минималистичный DL фреймворк на Rust
+    ]
+
+    #v(3em)
+
+    #text(size: 20pt, fill: rgb("#c0c0c0"))[
+      RustCon 2025
+    ]
+
+    #v(0.5em)
+
+    #text(size: 18pt, fill: rgb("#a0a0a0"))[
+      Пацакула Никита
     ]
   ]
 ]
@@ -87,6 +100,94 @@
   #align(center)[
     #image("frameworks_histogram.svg", width: 95%)
   ]
+]
+
+// Framework Popularity Trends
+#slide[
+  = ML фреймворки: популярность
+
+  // #v(1em)
+
+  #align(center)[
+    #image("frameworks_trends.png", width: 95%)
+  ]
+]
+
+// PyTorch Architecture
+#slide[
+  = Архитектура PyTorch
+
+  #v(1em)
+
+  #grid(
+    columns: (1fr, 1fr, 1fr, 1fr, 1fr),
+    gutter: 0.8em,
+    align: center,
+    [
+      *Python API*\
+      Tensor operations\
+      Autograd\
+      #sym.arrow.b\
+      ATen operators
+    ],
+    [
+      *Dispatcher*\
+      Dynamic dispatch\
+      Device selection\
+      #sym.arrow.b\
+      Backend kernels
+    ],
+    [
+      *Autograd Engine*\
+      Build computation\
+      graph\
+      Backward pass\
+      #sym.arrow.b\
+      Gradients
+    ],
+    [
+      *ATen*\
+      Operator library\
+      CPU/CUDA kernels\
+      #sym.arrow.b\
+      Optimized code
+    ],
+    [
+      *Backends*\
+      cuDNN/cuBLAS\
+      MKL/oneDNN\
+      #sym.arrow.b\
+      Hardware execution
+    ]
+  )
+]
+
+#slide[
+  = PyTorch: Что не так
+
+  #set text(size: 20pt)
+
+  == Аппаратная поддержка
+
+  #list(
+    [Быстро работает только Nvidia],
+    [Хочешь добавить свой ускоритель -- реализуй 250 ядер и 50 операторов],
+    [В апстрим всё равно не примут]
+  )
+
+  == Архитектура
+
+  #list(
+    [Статический оптимизатор обгонит динамический],
+    [Отладка -- удел сильных]
+  )
+
+  == Python
+
+  #list(
+    [Нет типов -- больно],
+    [Медленно]
+  )
 ]
 
 // Tinygrad Capabilities
@@ -126,7 +227,7 @@
 
 // Tinygrad Architecture
 #slide[
-  = Архитектура Tinygrad
+  = Tinygrad: Архитектура
 
   #v(1em)
 
@@ -170,57 +271,136 @@
   )
 ]
 
-// Frontend Example - Python Code
 #slide[
   = Frontend: PyTorch-like Code
 
-  ```python
+  #v(1em)
+
+  == Tinygrad
+  ```py
   a = Tensor([1.0, 2.0, 3.0])
   b = Tensor([4.0, 5.0, 6.0])
   c = Tensor([2.0, 2.0, 2.0])
-
-  # Perform operations (lazy - no computation yet!)
   result = (a + b) * c
+  ```
+
+  == Morok
+  ```rs
+  let a = Tensor::from_slice(&[1.0, 2.0, 3.0]);
+  let b = Tensor::from_slice(&[4.0, 5.0, 6.0]);
+  let c = Tensor::from_slice(&[2.0, 2.0, 2.0]);
+  let result = (a + b) * c;
   ```
 ]
 
-// Frontend Example - IR Tree
+// Lazy Evaluation Graph
 #slide[
-  = Frontend: Generated IR Tree
+  = Вычислительный граф
 
-  #v(0.5em)
+  #v(1em)
 
-  #text(size: 12pt, font: "Fira Code")[
-    ```
-    MUL (dtype=dtypes.float)                    ← Final: (a+b)*c
-      └─ input[0]:
-        ADD (dtype=dtypes.float)                ← a + b
-          └─ input[0]:
-            COPY (dtype=dtypes.float)           ← Copy 'a'
-              └─ input[0]:
-                BUFFER (dtype=dtypes.float)
-                  └─ input[0]: UNIQUE (dtype=dtypes.void)
-                  └─ input[1]: DEVICE (dtype=dtypes.void)
-          └─ input[1]:
-            COPY (dtype=dtypes.float)           ← Copy 'b'
-              └─ input[0]:
-                BUFFER (dtype=dtypes.float)
-                  └─ input[0]: UNIQUE (dtype=dtypes.void)
-                  └─ input[1]: DEVICE (dtype=dtypes.void)
-      └─ input[1]:
-        COPY (dtype=dtypes.float)               ← Copy 'c'
-          └─ input[0]:
-            BUFFER (dtype=dtypes.float)
-              └─ input[0]: UNIQUE (dtype=dtypes.void)
-
-    Total nodes: 13
-    ```
+  #align(center)[
+    #render(read("graph.dot"), background: rgb("#2d2d2d"))
   ]
+]
+
+#slide[
+  = Оптимизатор: Graph Rewriting
+
+  #v(1em)
+
+  ```rs
+  // x - 0 → x
+  pattern!(patterns,
+      UPat::var("x") - UPat::cvar("c") => |x, c| {
+          let const_val = get_const_value(c)?;
+          if is_identity_value(&const_val, &BinaryOp::Sub, true) {
+              Some(Rc::clone(x))
+          } else {
+              None
+          }
+      }
+  );
+  ```
+]
+
+#slide[
+  = Граф вычислений
+
+  #v(1em)
+
+  ```rs
+  pub enum Op {
+      Const(ConstValueHash),
+      Unique(usize),
+      // ...
+      Unary(UnaryOp, Rc<UOp>),
+      Binary(BinaryOp, Rc<UOp>, Rc<UOp>),
+      Ternary(TernaryOp, Rc<UOp>, Rc<UOp>, Rc<UOp>),
+      // ...
+      If { condition: Rc<UOp>, body: SmallVec<[Rc<UOp>; 4]> },
+      EndIf { if_op: Rc<UOp>, body: SmallVec<[Rc<UOp>; 4]> },
+  }
+  ```
+]
+
+#slide[
+  = Оптимизатор: Graph Rewriting
+  ```rs
+  // Pattern 2: Remove BUFFERIZE when compute must always run
+  // Operations like CONTIGUOUS, COPY, ASSIGN have side effects
+  // and shouldn't be wrapped in BUFFERIZE
+  pattern!(patterns,
+      UPat::var("buf") => |buf: &Rc<UOp>| {
+          if let Op::Bufferize { compute, .. } = buf.op()
+              && is_always_run_op(compute.op()) {
+                  return Some(Rc::clone(compute));
+              }
+          None
+      }
+  );
+  ```
+]
+
+#slide[
+  = Оптимизатор: Формальная верификация
+
+  ```rs
+  #[test]
+  fn test_verify_identity_add_zero() {
+      // x + 0 = x
+      let x = UOp::var("x", DType::Int32, 0, 100);
+      let zero = UOp::const_(DType::Int32, ConstValue::Int(0));
+      let x_plus_zero = UOp::try_add_op(x.clone(), zero.clone()).unwrap();
+
+      verify_equivalence(&x_plus_zero, &x).expect("x + 0 should equal x");
+  }
+  ```
+]
+
+#slide[
+  = Оптимизатор: Формальная верификация
+
+  ```rs
+  #[test]
+  fn z3_verify_zero_mul(x in arb_var_uop(DType::Int32)) {
+      let zero = UOp::const_(DType::Int32, ConstValue::Int(0));
+      let expr = UOp::try_mul_op(x.clone(), zero.clone()).unwrap();
+      let matcher = symbolic_simple();
+      let simplified = graph_rewrite(&matcher, expr.clone());
+
+      // Should simplify to 0
+      prop_assert!(Rc::ptr_eq(&simplified, &zero));
+
+      // Z3 should verify equivalence
+      verify_equivalence(&expr, &simplified).expect("Z3 should verify x * 0 = 0");
+  }
+  ```
 ]
 
 // Codegen Example
 #slide[
-  = Codegen: Generated Kernel
+  = Кодогенерация: Сгенерированный ядро
 
   ```c
   __kernel void E_3(
@@ -235,32 +415,12 @@
           float val0 = data1[gidx0];  // Load a[i]
           float val1 = data2[gidx0];  // Load b[i]
           float val2 = data3[gidx0];  // Load c[i]
-
           float acc0 = (val0 + val1);  // a + b
           float acc1 = (acc0 * val2);  // (a+b) * c
-
           data0[gidx0] = acc1;         // Store result
       }
   }
   ```
-]
-
-// Tinygrad Problems
-#slide[
-  = Tinygrad's Problems
-
-  #v(1em)
-
-  #text(size: 24pt, fill: rgb("#ff6b35"))[
-    Python #sym.arrow.r weak IR, poor performance
-  ]
-
-  #v(2em)
-
-  #enum(
-    [The lack of proper sum types and strict type checking leads to non-exhaustive tree pattern matching],
-    [On large graphs, the time taken by optimizer passes becomes significant]
-  )
 ]
 
 // Liho Slide (placeholder)
@@ -276,42 +436,14 @@
   ]
 ]
 
-// Morok Architecture
-#slide[
-  = Morok Architecture
-
-  #v(2em)
-
-  #enum(
-    [Fully typed IR],
-    [Four stage compiler],
-    [AOT mode]
-  )
-]
-
 // Morok Performance
 #slide[
-  = Morok Performance
-
-  #v(2em)
-
-  #text(size: 24pt)[
-    Benchmarks:
-  ]
-
-  #v(1em)
-
-  #enum(
-    [MNIST digit classification],
-    [LLAMA 3 token generation]
-  )
+  = Morok: Производительность
 
   #v(1em)
 
   #align(center)[
-    #text(style: "italic", fill: rgb("#888888"))[
-      (Performance graphs to be added)
-    ]
+    #image("performance_comparison.png", width: 95%)
   ]
 ]
 
@@ -330,28 +462,29 @@
 
 // Future Plans
 #slide[
-  = Future Plans
+  = Планы
 
-  #v(2em)
+  #set text(size: 20pt)
 
-  #enum(
-    [Implement `morok-kittens`, port FA 2/3/4],
-    [Implement LLVM generation for all platforms],
-    [Implement more models]
+  == Архитектура
+
+  #list(
+    [Избавиться от Cell\*],
+    [Улучшить интерфейсы]
   )
-]
 
-// Thank You Slide
-#slide[
-  #align(center + horizon)[
-    #text(size: 48pt, weight: "bold", fill: rgb("#ff6b35"))[
-      Thank You!
-    ]
+  == Производительность
 
-    #v(2em)
+  #list(
+    [Реализовать `morok-kittens`, портировать FA 2/3/4],
+    [Оптимизировать компилятор графов]
+  )
 
-    #text(size: 24pt)[
-      Questions?
-    ]
-  ]
+  == Экосистема
+
+  #list(
+    [Написать гайды по портированию с других фреймворков],
+    [Портировать современные модели на Morok],
+    [Расширить поддержку аппаратных ускорителей]
+  )
 ]
