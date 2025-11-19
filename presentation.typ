@@ -423,17 +423,29 @@
   ```
 ]
 
-// Liho Slide (placeholder)
+// Liho Slide
 #slide[
   = Liho
 
-  #v(2em)
+  #set text(size: 20pt)
 
-  #align(center)[
-    #text(size: 24pt, style: "italic", fill: rgb("#888888"))[
-      (Details about Liho to be added)
-    ]
-  ]
+  == Эволюция портирования
+
+  #list(
+    [*Прямолинейный порт из Python* -- плохая производительность и эргономика],
+    [*Подходы из взрослых компиляторов* -- излишняя сложность для задачи],
+    [*Morok* -- третья итерация, баланс простоты и эффективности]
+  )
+
+  #v(1em)
+
+  == Ключевые улучшения
+
+  #list(
+    [Переосмысление структур данных под Rust],
+    [Упрощение пайплайна компиляции],
+    [Использование idiomatic Rust patterns]
+  )
 ]
 
 // Morok Performance
@@ -451,13 +463,33 @@
 #slide[
   = Thunderkittens
 
-  #v(2em)
+  #set text(size: 20pt)
 
-  #align(center)[
-    #text(size: 28pt)[
-      High-performance kernel DSL
-    ]
-  ]
+  == Что это?
+
+  #list(
+    [Проект *HazyResearch* (Stanford University)],
+    [Минималистичный DSL для программирования GPU],
+    [Высокоуровневые абстракции над CUDA]
+  )
+
+  #v(0.5em)
+
+  == Преимущества
+
+  #list(
+    [Близко к теоретическому пределу производительности GPU],
+    [Значительно проще ручного написания CUDA-ядер],
+  )
+
+  #v(0.5em)
+
+  == Morok-kittens
+
+  #list(
+    [Схожий DSL над UOps, использующий те же принципы],
+    [Flash Attention 2/3/4 на этой архитектуре]
+  )
 ]
 
 // Future Plans
