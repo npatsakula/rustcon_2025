@@ -73,6 +73,26 @@
   ]
 ]
 
+#slide[
+  = Обо мне
+
+  #set text(size: 22pt)
+
+  #v(1em)
+
+  #list(
+    [Пишу на Rust последние 6 лет],
+    [Работал над сложными проектами
+      #list(
+        [Отечественная СУБД],
+        [Web-scale поисковик],
+        [Web-scale ML-пайплайны]
+      )
+    ],
+    [Последние полтора года работаю CTO в Cognito]
+  )
+]
+
 // Problems Slide
 #slide[
   = Проблемы крупных ML фреймворков
@@ -172,7 +192,7 @@
   #list(
     [Быстро работает только Nvidia],
     [Хочешь добавить свой ускоритель -- реализуй 250 ядер и 50 операторов],
-    [В апстрим всё равно не примут]
+    [В upstream всё равно не примут]
   )
 
   == Архитектура
@@ -214,7 +234,7 @@
       == Особенности
 
       #enum(
-        [Гибкий фроентенд a la PyTorch],
+        [Гибкий фронтенд a la PyTorch],
         [Ленивая семантика a la MLX],
         [JIT компиляция],
         [Полу-автоматическое шардирование],
@@ -272,7 +292,20 @@
 ]
 
 #slide[
-  = Frontend: PyTorch-like Code
+  = Tinygrad: Что не так
+
+  #set text(size: 20pt)
+
+  == Python
+
+  #list(
+    [Нельзя написать нормальные биндинги в Rust],
+    [Без типов программировать неприятно]
+  )
+]
+
+#slide[
+  = Frontend: PyTorch-like код
 
   #v(1em)
 
@@ -341,6 +374,27 @@
       If { condition: Rc<UOp>, body: SmallVec<[Rc<UOp>; 4]> },
       EndIf { if_op: Rc<UOp>, body: SmallVec<[Rc<UOp>; 4]> },
   }
+  ```
+]
+
+#slide[
+  = Tinygrad: Спагетти вычислений
+
+  #v(1em)
+
+  ```py
+  for u in sched_sink.toposort():
+    if u.op is Ops.AFTER: continue
+    k = u.src[1]  # Assumes .src has index 1!
+
+    for s in k.src[0].src if k.op is Ops.END else k.src:  # Structure depends on op
+      if s.op is Ops.AFTER:
+        children[s.src[1]].append(k)
+      elif s.op is Ops.BUFFER:
+        pass
+      else:
+        # Runtime error for unhandled ops!
+        raise RuntimeError(f"input must be AFTER or BUFFER, not {s.op}")
   ```
 ]
 
