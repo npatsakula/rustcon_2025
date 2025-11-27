@@ -1,0 +1,41 @@
+name: Build PDF
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Install Typst
+        uses: typst-community/setup-typst@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Generate assets
+        run: make assets
+
+      - name: Build PDF
+        run: typst compile presentation.typ presentation.pdf
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: presentation
+          path: presentation.pdf
+
+      - name: Create release
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Build ${{ github.run_number }}
+          files: presentation.pdf
+          generate_release_notes: true
