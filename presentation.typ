@@ -106,7 +106,7 @@
   #one-by-one[
     - Разработка аналитических систем
   ][
-    - Сбор открытой информации: \~1400 PPS, картинки, видео, аудио
+    - Сбор открытой информации: \~1300 PPS, картинки, видео, аудио
   ][
     - ML пайплайн
       - Анализ текста: PoS, NER, Sentence segmentation, Topic segmentation
@@ -126,6 +126,8 @@
 
 #slide[
   = DL фреймворк
+
+  #set text(size: 26pt)
   #enum(
     [Работают с многомерными матрицами (Тензорами)],
     [Позволяет выполнять на ней ограниченный, но достаточный набор операций],
@@ -140,14 +142,14 @@
 
   #v(1em)
 
-  #set text(size: 24pt)
+  #set text(size: 26pt)
 
   #enum(
     numbering: "1.",
     [Потребность работать в зоопарке аппаратного ускорения],
     [Сложно вносить изменения и профилировать],
     [Сложная и дорогая DevOps/MLOps инфраструктура],
-    [Небольшая площать интеропа],
+    [Небольшая площадь интеропа],
     [Невозможность использовать большую часть экосистемы]
   )
 ]
@@ -159,7 +161,7 @@
   #v(2em)
 
   #align(center)[
-    #image("frameworks_histogram.svg", width: 95%)
+    #image("assets/frameworks_histogram.svg", width: 95%)
   ]
 ]
 
@@ -170,7 +172,7 @@
   // #v(1em)
 
   #align(center)[
-    #image("frameworks_trends.png", width: 95%)
+    #image("assets/frameworks_trends.png", width: 95%)
   ]
 ]
 
@@ -335,7 +337,7 @@
 #slide[
   = Tinygrad: Что не так
 
-  #set text(size: 20pt)
+  #set text(size: 26pt)
 
   == Python
 
@@ -343,6 +345,48 @@
     [Нельзя написать нормальные биндинги в Rust],
     [Без типов программировать неприятно]
   )
+]
+
+#slide[
+  #align(center)[
+    #image("assets/moderation.jpg")
+  ]
+]
+
+#slide[
+  = Morok
+
+  #grid(
+    columns: (1fr, 1fr),
+    gutter: 2em,
+    [
+      == Аппаратные ускорители
+
+      #list(
+        [CPU],
+        [CUDA],
+        [METAL#sym.ast.basic],
+        [AMD#sym.ast.basic],
+        [Qualcomm#sym.ast.basic]
+      )
+    ],
+    [
+      == Особенности
+
+      #enum(
+        [Порт Tinygrad в Rust],
+        [Пригоден для встраиваемых систем],
+        [Всего 45 KLOC кода],
+        [Всего 60 KLOC тестов]
+      )
+    ]
+  )
+]
+
+#slide[
+  #align(center)[
+    #image("assets/easy.jpg", width: 95%)
+  ]
 ]
 
 #slide[
@@ -368,6 +412,15 @@
 ]
 
 #slide[
+  = Frontend: ONNX
+
+  ```rs
+  let file = std::fs::read("model.onnx")?;
+  let model = Tensor::from_onnx(&file)?;
+  ```
+]
+
+#slide[
   = Граф вычислений
 
   #v(1em)
@@ -375,7 +428,7 @@
   ```rs
   pub enum Op {
       Const(ConstValueHash),
-      Unique(usize),
+      Noop,
       // ...
       Unary(UnaryOp, Rc<UOp>),
       Binary(BinaryOp, Rc<UOp>, Rc<UOp>),
@@ -415,7 +468,7 @@
   #v(1em)
 
   #align(center)[
-    #render(read("graph.dot"), background: rgb("#2d2d2d"))
+    #render(read("assets/graph.dot"), background: rgb("#2d2d2d"))
   ]
 ]
 
@@ -551,7 +604,7 @@
   #v(1em)
 
   #align(center)[
-    #image("performance_comparison.png", width: 95%)
+    #image("assets/performance_comparison.png", width: 95%)
   ]
 ]
 
@@ -624,11 +677,11 @@
     align: center,
     [
       == Отзывы
-      #image("review.svg", width: 80%)
+      #image("assets/review.svg", width: 80%)
     ],
     [
       == GitHub
-      #image("morok.svg", width: 80%)
+      #image("assets/morok.svg", width: 80%)
     ]
   )
 ]
