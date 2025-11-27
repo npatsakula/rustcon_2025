@@ -111,7 +111,7 @@ plt.tight_layout()
 
 # Save as SVG
 plt.savefig(
-    "frameworks_histogram.svg",
+    "assets/frameworks_histogram.svg",
     format="svg",
     facecolor="#1a1a1a",
     edgecolor="none",
